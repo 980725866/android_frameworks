@@ -201,7 +201,7 @@ task pullFrameworkCode() {
             }
             cmd += scpCmd
         }
-
+        cmd += "cd frameworks;git init;"
         exec {
             ExecSpec execSpec ->
                 executable 'bash'
@@ -254,7 +254,7 @@ task pushFrameworkCode() {
 task cleanFramework() {
     doLast {
         println("cleanFramework")
-        def cmd = "rm out -rf; rm frameworks/* -rf"
+        def cmd = "rm out -rf;rm frameworks/* -rf;rm frameworks/.git -rf"
         exec {
             ExecSpec execSpec ->
                 executable 'bash'

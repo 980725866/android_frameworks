@@ -54,8 +54,8 @@ def TV_FRAMEWORK_JARS = [
 
 def TV_FRAMEWORK_CODE = [
         "vendor/amlogic/common/frameworks/",
-//        "vendor/amlogic/common/tv/frameworks/core/java/com/droidlogic/app/tv/",
-//        "vendor/amlogic/common/apps/TvInput/DroidLogicTvInput/",
+        "vendor/amlogic/common/tv/frameworks/core/java/com/droidlogic/app/tv/",
+        "vendor/amlogic/common/apps/TvInput/DroidLogicTvInput/",
 ]
 
 task pullTvFrameworkCode() {
@@ -75,7 +75,7 @@ task pullTvFrameworkCode() {
             println(file.getPath())
             cmd += scpCmd
         }
-
+        cmd += "cd vendor;git init;"
         exec {
             ExecSpec execSpec ->
                 executable 'bash'
@@ -183,10 +183,10 @@ task pushTvFrameworkJar() {
     }
 }
 
-task cleanFramework() {
+task cleanVendor() {
     doLast {
-        println("cleanFramework")
-        def cmd = "rm out -rf; rm vendor/* -rf"
+        println("cleanVendor")
+        def cmd = "rm out -rf;rm vendor/* -rf;rm vendor/.git -rf"
         exec {
             ExecSpec execSpec ->
                 executable 'bash'
