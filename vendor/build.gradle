@@ -1,0 +1,198 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    compileSdk 31
+
+    defaultConfig {
+        applicationId "com.example.vendor"
+        minSdk 21
+        targetSdk 31
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs = ["vendor", "src"]
+        }
+    }
+}
+
+dependencies {
+
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'com.google.android.material:material:1.3.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    testImplementation 'junit:junit:4.+'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+}
+
+def TV_FRAMEWORK_JARS = [
+        "out/target/product/${rootProject.ext.tartgetBoard}/vendor/framework/droidlogic.jar",
+        "out/target/product/${rootProject.ext.tartgetBoard}/vendor/framework/droidlogic-tv.jar",
+        "out/target/product/${rootProject.ext.tartgetBoard}/vendor/framework/oat/arm/droidlogic.odex",
+        "out/target/product/${rootProject.ext.tartgetBoard}/vendor/framework/oat/arm/droidlogic.vdex",
+        "out/target/product/${rootProject.ext.tartgetBoard}/vendor/framework/oat/arm/droidlogic-tv.odex",
+        "out/target/product/${rootProject.ext.tartgetBoard}/vendor/framework/oat/arm/droidlogic-tv.vdex",
+]
+
+def TV_FRAMEWORK_CODE = [
+        "vendor/amlogic/common/frameworks/",
+//        "vendor/amlogic/common/tv/frameworks/core/java/com/droidlogic/app/tv/",
+//        "vendor/amlogic/common/apps/TvInput/DroidLogicTvInput/",
+]
+
+task pullTvFrameworkCode() {
+    doLast {
+        println("pullTvFrameworkCode")
+        def out = new ByteArrayOutputStream()
+        def cmd = ""
+        for (filePath in TV_FRAMEWORK_CODE) {
+            def scpCmd = "scp -rp " + PROJECT_PATH + filePath + "* " + filePath + ";"
+            def directoryPath = filePath.substring(0, filePath.lastIndexOf("/"))
+            def windowsDirectoryPath = directoryPath.replace("/", "\\")
+            println(scpCmd)
+            def file = new File(rootProject.rootDir, windowsDirectoryPath)
+            if (!file.exists()) {
+                cmd += "mkdir -p " + directoryPath + ";"
+            }
+            println(file.getPath())
+            cmd += scpCmd
+        }
+
+        exec {
+            ExecSpec execSpec ->
+                executable 'bash'
+                args '-c', cmd
+                standardOutput = out
+        }
+        println(out.toString())
+    }
+}
+
+task pushTvFrameworkCode() {
+    doLast {
+        println("pushTvFrameworkCode")
+        def out = new ByteArrayOutputStream()
+        // 通过git创库，获取已经add的文件同步到服务器, 只用scp修改的代码
+        exec {
+            workingDir '.\\vendor'
+            commandLine 'cmd', '/c', 'git status -suno .'
+            standardOutput = out
+        }
+        if (out == null || out.equals("")) {
+            return
+        }
+
+        def cmd = ""
+        def filePaths = out.toString().split("\n")
+        for (tmpFilePath in filePaths) {
+            def filePath = tmpFilePath.substring(tmpFilePath.indexOf(' ') + 1).trim()
+            if (filePath == null || !filePath.endsWith(".java")) {
+                continue
+            }
+            def dir = "vendor/";
+            def scpString = "scp -p ${dir}" + filePath + " " + PROJECT_PATH + "${dir}" + filePath + ";"
+            println("pushTvFrameworkCode " + scpString)
+            cmd += scpString
+        }
+        if (cmd.length() < 10) {
+            return
+        }
+
+        exec {
+            ExecSpec execSpec ->
+                executable 'bash'
+                args '-c', cmd
+                standardOutput = out
+        }
+        println(out.toString())
+    }
+}
+
+task pullTvFrameworkJar() {
+    doLast {
+        println("pullTvFrameworkJar")
+        def out = new ByteArrayOutputStream()
+        def cmd = ""
+
+        for (filePath in TV_FRAMEWORK_JARS) {
+            def scpCmd = SCP_PROJECT_PATH + filePath + " " + filePath + ";"
+            def directoryPath = filePath.substring(0, filePath.lastIndexOf("/"))
+            def windowsDirectoryPath = directoryPath.replace("/", "\\")
+
+            def file = new File(rootProject.rootDir, windowsDirectoryPath)
+            if (!file.exists()) {
+                cmd += "mkdir -p " + directoryPath + ";"
+            }
+            println(file.getPath())
+
+            cmd += scpCmd
+        }
+        println(cmd)
+
+        exec {
+            ExecSpec execSpec ->
+                executable 'bash'
+                args '-c', cmd
+                standardOutput = out
+        }
+        println(out.toString())
+    }
+}
+
+task pushTvFrameworkJar() {
+    dependsOn(pullTvFrameworkJar)
+    doLast {
+        println("pullTvFrameworkJar")
+        def tartgetBoard = "${rootProject.ext.tartgetBoard}"
+        def out = new ByteArrayOutputStream()
+        def cmd = "adb root;adb remount;"
+        for (filePath in TV_FRAMEWORK_JARS) {
+            def windowsFilePath = filePath.replace("/", "\\")
+            def devicePath = filePath.substring(filePath.indexOf(tartgetBoard) + tartgetBoard.length() + 1)
+            println(windowsFilePath + " " + devicePath)
+            cmd += "adb push ${windowsFilePath} ${devicePath};"
+        }
+
+        cmd += "adb reboot"
+        println(cmd)
+
+        exec {
+            ExecSpec execSpec ->
+                executable 'bash'
+                args '-c', cmd
+                standardOutput = out
+        }
+    }
+}
+
+task cleanFramework() {
+    doLast {
+        println("cleanFramework")
+        def cmd = "rm out -rf; rm vendor/* -rf"
+        exec {
+            ExecSpec execSpec ->
+                executable 'bash'
+                args '-c', cmd
+                standardOutput = out
+        }
+        println(out.toString())
+    }
+}

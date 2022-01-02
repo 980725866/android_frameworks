@@ -1,0 +1,266 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    compileSdk 31
+
+    defaultConfig {
+        applicationId "com.example.framework"
+        minSdk 21
+        targetSdk 31
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs = ["frameworks", "src"]
+        }
+    }
+}
+
+dependencies {
+
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'com.google.android.material:material:1.3.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    testImplementation 'junit:junit:4.+'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+}
+
+def SERVICES_JARS = [
+        "out/target/product/${rootProject.ext.tartgetBoard}/system/framework/services.jar",
+        "out/target/product/${rootProject.ext.tartgetBoard}/system/framework/oat/arm/services.art",
+        "out/target/product/${rootProject.ext.tartgetBoard}/system/framework/oat/arm/services.odex",
+        "out/target/product/${rootProject.ext.tartgetBoard}/system/framework/oat/arm/services.vdex",
+//    "out/target/product/${rootProject.ext.tartgetBoard}/system/framework/oat/arm64/services.art",
+//    "out/target/product/${rootProject.ext.tartgetBoard}/system/framework/oat/arm64/services.odex",
+//    "out/target/product/${rootProject.ext.tartgetBoard}/system/framework/oat/arm64/services.vdex"
+]
+
+def FRAMEWORK_JARS = [
+        "out/target/product/${rootProject.ext.tartgetBoard}/system/framework/framework.jar",
+        "out/target/product/${rootProject.ext.tartgetBoard}/system/framework/arm/boot-framework.art",
+        "out/target/product/${rootProject.ext.tartgetBoard}/system/framework/arm/boot-framework.oat",
+        "out/target/product/${rootProject.ext.tartgetBoard}/system/framework/arm/boot-framework.vdex",
+//    "out/target/product/${rootProject.ext.tartgetBoard}/system/framework/arm64/boot-framework.art",
+//    "out/target/product/${rootProject.ext.tartgetBoard}/system/framework/arm64/boot-framework.oat",
+//    "out/target/product/${rootProject.ext.tartgetBoard}/system/framework/arm64/boot-framework.vdex",
+]
+
+
+def FRAMEWORK_CODE = [
+        "frameworks/base/core/",
+        "frameworks/base/services/"
+]
+
+task pullServiceJar() {
+    doLast {
+        println("pullServiceJar")
+        def out = new ByteArrayOutputStream()
+        def cmd = ""
+
+        for (filePath in SERVICES_JARS) {
+            def scpCmd = SCP_PROJECT_PATH + filePath + " " + filePath + ";"
+            def directoryPath = filePath.substring(0, filePath.lastIndexOf("/"))
+            def windowsDirectoryPath = directoryPath.replace("/", "\\")
+
+            def file = new File(rootProject.rootDir, windowsDirectoryPath)
+            if (!file.exists()) {
+                cmd += "mkdir -p " + directoryPath + ";"
+            }
+            println(file.getPath())
+
+            cmd += scpCmd
+        }
+
+        println(cmd)
+
+        exec {
+            ExecSpec execSpec ->
+                executable 'bash'
+                args '-c', cmd
+                standardOutput = out
+        }
+        println(out.toString())
+    }
+}
+
+task pushServiceJar() {
+    dependsOn(pullServiceJar)
+    doLast {
+        println("pushServiceJar")
+        def tartgetBoard = "${rootProject.ext.tartgetBoard}"
+        def out = new ByteArrayOutputStream()
+        def cmd = "adb root;adb remount;"
+        for (filePath in SERVICES_JARS) {
+            def windowsFilePath = filePath.replace("/", "\\")
+            def devicePath = filePath.substring(filePath.indexOf(tartgetBoard) + tartgetBoard.length() + 1)
+            println(windowsFilePath + " " + devicePath)
+            cmd += "adb push ${windowsFilePath} ${devicePath};"
+        }
+
+        cmd += "adb reboot"
+        println(cmd)
+
+        exec {
+            ExecSpec execSpec ->
+                executable 'bash'
+                args '-c', cmd
+                standardOutput = out
+        }
+        println(out.toString())
+    }
+}
+
+task pullFrameworkJar() {
+    doLast {
+        println("pullFrameworkJar")
+        def out = new ByteArrayOutputStream()
+        def cmd = ""
+
+        for (filePath in FRAMEWORK_JARS) {
+            def scpCmd = SCP_PROJECT_PATH + filePath + " " + filePath + ";"
+            def directoryPath = filePath.substring(0, filePath.lastIndexOf("/"))
+            def windowsDirectoryPath = directoryPath.replace("/", "\\")
+
+            def file = new File(rootProject.rootDir, windowsDirectoryPath)
+            if (!file.exists()) {
+                cmd += "mkdir -p " + directoryPath + ";"
+            }
+            println(file.getPath())
+
+            cmd += scpCmd
+        }
+        println(cmd)
+
+        exec {
+            ExecSpec execSpec ->
+                executable 'bash'
+                args '-c', cmd
+                standardOutput = out
+        }
+        println(out.toString())
+    }
+}
+
+task pushFrameworkJar() {
+    dependsOn(pullFrameworkJar)
+    doLast {
+        println("pushFrameworkJar")
+        def tartgetBoard = "${rootProject.ext.tartgetBoard}"
+        def out = new ByteArrayOutputStream()
+        def cmd = "adb root;adb remount;"
+        for (filePath in FRAMEWORK_JARS) {
+            def windowsFilePath = filePath.replace("/", "\\")
+            def devicePath = filePath.substring(filePath.indexOf(tartgetBoard) + tartgetBoard.length() + 1)
+            println(windowsFilePath + " " + devicePath)
+            cmd += "adb push ${windowsFilePath} ${devicePath};"
+        }
+
+        cmd += "adb reboot"
+        println(cmd)
+
+        exec {
+            ExecSpec execSpec ->
+                executable 'bash'
+                args '-c', cmd
+                standardOutput = out
+        }
+    }
+}
+
+task pullFrameworkCode() {
+    doLast {
+        println("pullFrameworkCode")
+        def out = new ByteArrayOutputStream()
+        def cmd = ""
+
+        for (filePath in FRAMEWORK_CODE) {
+            def scpCmd = "scp -rp " + PROJECT_PATH + filePath + "* " + filePath + ";"
+            def directoryPath = filePath.substring(0, filePath.lastIndexOf("/"))
+            def windowsDirectoryPath = directoryPath.replace("/", "\\")
+            def file = new File(rootProject.rootDir, windowsDirectoryPath)
+            if (!file.exists()) {
+                cmd += "mkdir -p " + directoryPath + ";"
+            }
+            cmd += scpCmd
+        }
+
+        exec {
+            ExecSpec execSpec ->
+                executable 'bash'
+                args '-c', cmd
+                standardOutput = out
+        }
+        println(out.toString())
+    }
+}
+
+task pushFrameworkCode() {
+    doLast {
+        println("pushFrameworkCode")
+        def dir = "frameworks/";
+        def out = new ByteArrayOutputStream()
+        // 通过git创库，获取已经add的文件同步到服务器, 只用scp修改的代码
+        def gitCmd = "git status -suno ."
+        exec {
+            workingDir '.\\frameworks'
+            commandLine 'cmd', '/c', gitCmd
+            standardOutput = out
+        }
+        if (out == null || out.equals("")) {
+            return
+        }
+        def cmd = ""
+        def filePaths = out.toString().split("\n")
+        for (tmpFilePath in filePaths) {
+            def filePath = tmpFilePath.substring(tmpFilePath.indexOf(' ') + 1).trim()
+            if (filePath == null || !filePath.endsWith(".java")) {
+                continue
+            }
+            def scpString = "scp -p ${dir}" + filePath + " " + PROJECT_PATH + "${dir}" + filePath + ";"
+            println("pushFrameworkCode " + scpString)
+            cmd += scpString
+        }
+        if (cmd.length() < 10) {
+            return
+        }
+        exec {
+            ExecSpec execSpec ->
+                executable 'bash'
+                args '-c', cmd
+                standardOutput = out
+        }
+        println(out.toString())
+    }
+}
+
+task cleanFramework() {
+    doLast {
+        println("cleanFramework")
+        def cmd = "rm out -rf; rm frameworks/* -rf"
+        exec {
+            ExecSpec execSpec ->
+                executable 'bash'
+                args '-c', cmd
+                standardOutput = out
+        }
+        println(out.toString())
+    }
+}
