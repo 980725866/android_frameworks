@@ -16,16 +16,21 @@ task clean(type: Delete) {
     delete rootProject.buildDir
 }
 
-// project config
+// project config start
 ext {
-    userName = "lang.he"
-    serverIp = "fae01-sz"
-    projectPath = "/mnt/fileroot/lang.he/TCL-T965D4"
+    // 服务器用户名
+    userName = "ubuntu"
+    // 服务器IP
+    serverIp = "1.1.1.1"
+    // 服务器项目代码根目录路径
+    projectPath = "/home/ubuntu/Android/"
+    // 对应的board名
     tartgetBoard = "t982_ar301"
 
     SCP_PROJECT_PATH = "scp -p ${rootProject.ext.userName}@${rootProject.ext.serverIp}:${rootProject.ext.projectPath}/"
     PROJECT_PATH = "${rootProject.ext.userName}@${rootProject.ext.serverIp}:${rootProject.ext.projectPath}/"
 }
+// project config end
 
 
 
