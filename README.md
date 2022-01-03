@@ -15,7 +15,7 @@ android studio工具对java代码自动提示和搜索等功能，把服务的�
 
 1 安装git工具， 将git 和git自带的bash全部加到windows环境变量中
 
-![](D:\app\android_frameworks\markdown\image-20220102104147218.png)
+![](https://github.com/980725866/android_frameworks/blob/main/markdown/image-20220102104147218.png)
 
 
 
