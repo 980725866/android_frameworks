@@ -1,4 +1,4 @@
-## Windows下Android framework开发环境搭建
+## Android studio Android源码开发环境搭建
 ### 1 起因
 
 android studio工具对java代码自动提示和搜索等功能，把服务的代码全部导入整个工程，在加载的过程特别耗时，只需要我们自己开发的一部分代码，通过grade脚本用scp命令在windows和linux之间复制文件，将android studio中的修改同步到服务器
@@ -15,7 +15,7 @@ android studio工具对java代码自动提示和搜索等功能，把服务的�
 
 1 安装git工具， 将git 和git自带的bash全部加到windows环境变量中
 
-![image](https://github.com/980725866/android_frameworks/blob/main/markdown/image-20220102104147218.png)
+![](D:\app\android_frameworks\markdown\image-20220102104147218.png)
 
 
 
